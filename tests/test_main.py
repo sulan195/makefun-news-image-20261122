@@ -274,39 +274,35 @@ def test_no_overflow():
     import draw as render_mod
     img = Image.open(os.path.join(ROOT, "entry.png"))
     check("TC014-size-1024", img.size == (1024, 1024))
-    # Recompute the longest wrapped lines the renderer produces and
-    # assert each fits its box: headline, standfirst, card lines, brief.
+    # The renderer raises ValueError on any overflow, so a clean render
+    # is itself proof; here we re-derive the wrapped line counts at the
+    # exact fonts and box widths the page uses and assert the budgets.
     canvas = Image.new("RGB", (1024, 1024), render_mod.PAPER)
     d = ImageDraw.Draw(canvas)
-    head = render_mod.serif_bold(92)
-    size = 92
-    while size > 60:
-        head = render_mod.serif_bold(size)
-        if d.textlength("COP31 COLLAPSES", font=head) <= render_mod.CONTENT:
-            break
-        size -= 2
-    check("TC014-headline-fits",
-          d.textlength("COP31 COLLAPSES", font=head) <= render_mod.CONTENT)
-    sf = render_mod.sans(27)
-    for line in render_mod.wrap(d, "Climate talks end with no deal after "
-                                "the EU and about 130 nations reject a "
-                                "final text that leaves out fossil fuels.",
-                                sf, 610):
-        check("TC014-standfirst-line-fits",
-              d.textlength(line, font=sf) <= 610, line)
-    hf = render_mod.serif_bold(26)
-    sf2 = render_mod.sans(17)
-    for kicker, headline, summary, _ in render_mod.STORIES:
-        for line in render_mod.wrap(d, headline, hf, 312 - 24):
-            check("TC014-card-headline-fits",
-                  d.textlength(line, font=hf) <= 288, line)
-        for line in render_mod.wrap(d, summary, sf2, 312 - 24):
-            check("TC014-card-summary-fits",
-                  d.textlength(line, font=sf2) <= 288, line)
-    bf = render_mod.sans(19)
-    for line in render_mod.wrap(d, render_mod.BRIEF, bf, render_mod.CONTENT):
-        check("TC014-brief-line-fits",
-              d.textlength(line, font=bf) <= render_mod.CONTENT, line)
+    mf = render_mod.fit_font(d, "Sunday 22 November 2026",
+                             render_mod.serif_bold, 86, 60,
+                             render_mod.CONTENT)
+    check("TC014-masthead-fits",
+          d.textlength("Sunday 22 November 2026", font=mf)
+          <= render_mod.CONTENT)
+    hf = render_mod.serif_bold(20)
+    sf = render_mod.sans(13)
+    for kicker, tag, _scene, headline, summary, _src in render_mod.HEROES:
+        check("TC014-hero-headline-fits",
+              len(render_mod.wrap(d, headline, hf, 297)) <= 2, headline)
+        check("TC014-hero-summary-fits",
+              len(render_mod.wrap(d, summary, sf, 297)) <= 3, summary)
+    hf2 = render_mod.serif_bold(13.5)
+    sf2 = render_mod.sans(10.5)
+    for kicker, _thumb, headline, summary in render_mod.GRID:
+        check("TC014-card-headline-fits",
+              len(render_mod.wrap(d, headline, hf2, 225)) <= 2, headline)
+        check("TC014-card-summary-fits",
+              len(render_mod.wrap(d, summary, sf2, 225)) <= 2, summary)
+    bf = render_mod.sans(10.5)
+    for item in render_mod.ALSO:
+        check("TC014-also-item-fits",
+              len(render_mod.wrap(d, item, bf, 212)) <= 2, item)
 
 
 # --- TC015: font fallback when the primary font file is missing
@@ -375,20 +371,23 @@ def test_repo_files():
 def test_content_markers():
     import draw as render_mod
     source = open(os.path.join(ROOT, "draw.py")).read()
-    check("TC023-masthead-text", '"THE WORLD TODAY"' in source)
-    check("TC023-date-line", '"SUNDAY 22 NOVEMBER 2026"' in source)
-    check("TC023-lead-headline", '"COP31 COLLAPSES"' in source)
-    check("TC024-six-stories", len(render_mod.STORIES) == 6)
+    check("TC023-masthead-text", '"THE WORLD IN ONE DAY"' in source)
+    check("TC023-date-line", '"Sunday 22 November 2026"' in source)
+    check("TC023-lead-headline",
+          '"Climate deal lands with no mention of fossil fuels"' in source)
+    check("TC024-story-counts",
+          len(render_mod.HEROES) == 3 and len(render_mod.GRID) == 9
+          and len(render_mod.ALSO) == 18)
+    check("TC024-region-sum",
+          sum(n for _name, n in render_mod.REGIONS) == 30)
     check("TC024-story-kickers",
-          all(k for k, _, _, _ in render_mod.STORIES))
-    check("TC025-brief-items",
-          all(s in render_mod.BRIEF for s in
-              ("El Chapo Isidro", "West Bank", "Alcaraz", "Thitikul")))
-    check("TC024-story-kickers",
-          all(k for k, _, _, _ in render_mod.STORIES))
-    check("TC025-brief-items",
-          all(s in render_mod.BRIEF for s in
-              ("El Chapo Isidro", "West Bank", "Alcaraz", "Thitikul")))
+          all(k for k, _t, _s, _h, _b, _r in render_mod.HEROES)
+          and all(k for k, _t, _h, _b in render_mod.GRID))
+    check("TC025-also-items",
+          all(s in " ".join(render_mod.ALSO) for s in
+              ("Manipur", "BepiColombo", "Bitcoin", "Estonia")))
+    check("TC025-date-check", '"DATE CHECK' in source
+          or "DATE CHECK —" in render_mod.DATE_CHECK)
 
 
 # --- TC026: malformed IEND -> exit 5
