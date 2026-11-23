@@ -188,12 +188,12 @@ def scene_ukraine(draw, x0, y0, x1, y1):
         draw.line([(cx - s, cy + s), (cx + s, cy - s)], fill=GOLD, width=2)
         draw.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], fill=RED)
     # apartment block, right side
-    bx0, by0 = x1 - 108, y0 + 34
+    bx0, by0 = x1 - 108, y0 + 30
     draw.rectangle([bx0, by0, x1 - 12, y1], fill=(38, 44, 62))
-    for r in range(4):
+    for r in range(3):
         for c in range(3):
             wx = bx0 + 10 + c * 32
-            wy = by0 + 10 + r * 20
+            wy = by0 + 10 + r * 19
             lit = (r + c) % 3 != 0
             draw.rectangle([wx, wy, wx + 18, wy + 12],
                            fill=GOLD if lit else (70, 78, 100))
@@ -477,9 +477,9 @@ MAP_ROWS = [
 ]
 
 # (story number, col, row) on the map grid.
-PINS = [(1, 26, 5), (2, 25, 7), (3, 29, 9), (4, 39, 10), (5, 45, 17),
-        (6, 6, 8), (7, 7, 10), (8, 25, 3), (9, 30, 8), (10, 40, 14),
-        (11, 23, 7), (12, 27, 12)]
+PINS = [(1, 26, 3), (2, 26, 6), (3, 29, 8), (4, 37, 8), (5, 45, 17),
+        (6, 6, 6), (7, 9, 8), (8, 24, 1), (9, 31, 6), (10, 36, 12),
+        (11, 23, 5), (12, 26, 9)]
 
 DATE_CHECK = ("DATE CHECK — Every story on this page happened, or was first "
               "reported, on Sunday 22 November 2026, wires read to 09:45 UTC. "
@@ -558,7 +558,7 @@ def draw_map(draw, x0, y0):
     for num, c, r in PINS:
         cx = x0 + c * cell + 1
         cy = y0 + r * cell + 1
-        draw.ellipse([cx - 7, cy - 7, cx + 7, cy + 7], fill=RED)
+        draw.ellipse([cx - 6, cy - 6, cx + 6, cy + 6], fill=RED)
         label = str(num)
         tw = draw.textlength(label, font=pf)
         draw.text((cx - tw / 2, cy - 4), label, font=pf,
